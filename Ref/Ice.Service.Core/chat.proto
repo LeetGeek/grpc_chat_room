@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
+
+package jvh.chat;
+
+option csharp_namespace = "Jvh.Chat";
+
+service ChatService {
+	rpc LoginToChat(ChatRegistrationRequest) returns (ChatRegistrationResponse);
+	rpc ListenForUserUpdates(UserInfo) returns (stream UserUpdate);
+	rpc ListenForMessageUpdates(UserInfo) returns (stream ChatMessage);
+	rpc SendMessage(ChatMessage) returns (ChatResponse);
+}
+
+
+
+
+
+message UserInfo {
+	string Username = 1;
+}
+
+
+message ChatRegistrationRequest {
+	string Name = 1;
+}
+
+message ChatRegistrationResponse {
+	string Name = 1;
+	int32 ErrorCode = 2;
+	string Message = 3;
+}
+
+message ChatRegistration {
+	int32 Id = 1;
+	string Name = 2;
+}
+
+message ChatMessage {
+	google.protobuf.Timestamp Timestamp = 1;
+	string From = 2;
+	string To = 3;
+	string Message = 4;
+}
+
+message ChatResponse {
+	string Name = 1;
+	int32 ErrorCode = 2;
+	string Message = 3;
+}
+
+message UserUpdate {
+	UserUpdateType UserUpdateType = 1;
+	string User = 2;
+}
+
+enum UserUpdateType {
+	LOGIN = 0;
+	LOGOUT = 1;
+}

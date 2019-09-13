@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
+
+package ice.service.common;
+
+option csharp_namespace = "Ice.Service.Common";
+
+message TimeSeriesDataPoint {
+	google.protobuf.Timestamp Timestamp = 1;
+	double Value = 2;
+}
+
+
