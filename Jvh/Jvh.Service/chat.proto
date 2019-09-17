@@ -10,11 +10,13 @@ package jvh.service.chat;
 option csharp_namespace = "Jvh.Service.Chat";
 
 service ChatService {
-	rpc Login(ChatRegistrationRequest) returns (ChatResponse);
-	rpc Logout(ChatRegistrationRequest) returns (ChatResponse);
+	rpc Login(UserInfo) returns (ChatResponse);
+	rpc Logout(UserInfo) returns (ChatResponse);
+	rpc SendMessage(ChatMessage) returns (ChatResponse);
+
 	rpc ListenForUserUpdates(UserInfo) returns (stream UserUpdate);
 	rpc ListenForMessageUpdates(UserInfo) returns (stream ChatMessage);
-	rpc SendMessage(ChatMessage) returns (ChatResponse);
+	
 }
 
 
@@ -42,7 +44,7 @@ message ChatMessage {
 message ChatResponse {
 	string Name = 1;
 	int32 ErrorCode = 2;
-	string Message = 3;
+	string ErrorMessage = 3;
 }
 
 message UserUpdate {

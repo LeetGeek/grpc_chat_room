@@ -49,9 +49,6 @@
     <Compile Include="ChatServerImpl.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Repo\MessageRepo.cs" />
-    <Compile Include="Repo\User.cs" />
-    <Compile Include="Repo\UserRepo.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
