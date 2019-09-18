@@ -1,0 +1,23 @@
+﻿syntax = "proto3";
+
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/field_mask.proto";
+
+package jvh.service.test;
+
+option csharp_namespace = "Jvh.Service.Test";
+
+service TestService {
+	rpc Ping(PingRequest) returns (PingResponse);
+}
+
+message PingRequest {
+	google.protobuf.Timestamp Timestamp = 1;
+}
+
+message PingResponse {
+	google.protobuf.Timestamp Timestamp = 1;
+}
+

@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
+using Jvh.Service;
 using Jvh.Service.Chat;
 
 namespace Jvh.App.ChatServer
@@ -13,6 +15,11 @@ namespace Jvh.App.ChatServer
     public class ChatServerImpl : ChatService.ChatServiceBase
     {
         static ChatRoomManager _chatRoomManager = new ChatRoomManager();
+
+        public ChatServerImpl() : base()
+        {
+            
+        }
 
         public override Task<ChatResponse> Login(UserInfo request, ServerCallContext context)
         {
@@ -72,6 +79,21 @@ namespace Jvh.App.ChatServer
 
                 await Task.Delay(50);
             }
+        }
+
+        public void StartPinging()
+        {
+            var testClient = new TestClient("localhost", 50052);
+            Task.Run(() =>
+            {
+                while (true)
+                {
+                    var time = testClient.PingServer().Result;
+                    Console.WriteLine($"Ping completed in {time.TotalMilliseconds/1000:F9} seconds");
+
+                    Thread.Sleep(100);
+                }
+            });
         }
     }
 
