@@ -64,11 +64,13 @@ namespace Jvh.App.ChatClient.View
                 TextBoxChatMain.AppendText($"{userUpdate.User} has left the chatroom.\r\n");
 
             }
+            TextBoxChatMain.ScrollToEnd();
         }
 
         private void OnNextChatMessage(ChatMessage chatMessage)
         {
             TextBoxChatMain.AppendText($"[{chatMessage.Timestamp.ToDateTime().ToShortTimeString()}] {chatMessage.From} says: {chatMessage.Message}\r\n");
+            TextBoxChatMain.ScrollToEnd();
         }
 
         private void Button_Click_Logout(object sender, RoutedEventArgs e)

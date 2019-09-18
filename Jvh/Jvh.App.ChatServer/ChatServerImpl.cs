@@ -12,7 +12,7 @@ namespace Jvh.App.ChatServer
 {
     public class ChatServerImpl : ChatService.ChatServiceBase
     {
-        ChatRoomManager _chatRoomManager = new ChatRoomManager();
+        static ChatRoomManager _chatRoomManager = new ChatRoomManager();
 
         public override Task<ChatResponse> Login(UserInfo request, ServerCallContext context)
         {
@@ -78,8 +78,6 @@ namespace Jvh.App.ChatServer
     class ChatRoomManager
     {
         private readonly object _userLock = new object();
-        //private readonly object _messageLock = new object();
-        //private readonly object _userUpdateLock = new object();
         private readonly Dictionary<string, User> _users = new Dictionary<string, User>();
         private readonly List<ChatMessage> _chatMessages = new List<ChatMessage>();
         private readonly List<UserUpdate> _userUpdates = new List<UserUpdate>();
@@ -111,7 +109,7 @@ namespace Jvh.App.ChatServer
                 }
 
                 _users.Add(username, new User(username));
-                PublishUserUpdate(new UserUpdate(){User = username, UserUpdateType = UserUpdateType.Login });
+                _userUpdates.Add(new UserUpdate() { User = username, UserUpdateType = UserUpdateType.Login });
             }
         }
 
@@ -120,7 +118,7 @@ namespace Jvh.App.ChatServer
             lock (_userLock)
             {
                 _users.Remove(username);
-                PublishUserUpdate(new UserUpdate() { User = username, UserUpdateType = UserUpdateType.Logout });
+                _userUpdates.Add(new UserUpdate() { User = username, UserUpdateType = UserUpdateType.Logout });
             }
         }
 
@@ -140,12 +138,11 @@ namespace Jvh.App.ChatServer
 
         public IEnumerable<UserUpdate> GetUnreadUserUpdatesForUser(string username)
         {
-            lock (_users)
+            lock (_userLock)
             {
-                var index = _users[username].UserUpdateIndex;
-                if (index == _userUpdates.Count)
-                    return Enumerable.Empty<UserUpdate>();
+                if (_users[username].MessageIndex == _userUpdates.Count) return Enumerable.Empty<UserUpdate>();
 
+                var index = _users[username].UserUpdateIndex;
                 _users[username].UserUpdateIndex = _userUpdates.Count;
 
                 return _userUpdates.Skip(index).ToList();
@@ -157,14 +154,6 @@ namespace Jvh.App.ChatServer
             lock (_userLock)
             {
                 _chatMessages.Add(message);
-            }
-        }
-
-        private void PublishUserUpdate(UserUpdate userUpdate)
-        {
-            lock (_userLock)
-            {
-                _userUpdates.Add(userUpdate);
             }
         }
     }

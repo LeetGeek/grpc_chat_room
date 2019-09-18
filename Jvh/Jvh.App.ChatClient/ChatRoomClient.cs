@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Reactive.Subjects;
+using System.Threading;
 using System.Threading.Tasks;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
@@ -47,6 +48,7 @@ namespace Jvh.App.ChatClient
 
             Task.Run(() =>
             {
+                //Thread.Sleep(1000);
                 using (var call = _client.ListenForMessageUpdates(userInfo))
                 {
                     var responseStream = call.ResponseStream;
@@ -60,6 +62,7 @@ namespace Jvh.App.ChatClient
 
             Task.Run(() =>
             {
+                //Thread.Sleep(1000);
                 using (var call = _client.ListenForUserUpdates(userInfo))
                 {
                     var responseStream = call.ResponseStream;
