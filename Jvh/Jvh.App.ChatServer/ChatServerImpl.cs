@@ -77,7 +77,7 @@ namespace Jvh.App.ChatServer
 
     class ChatRoomManager
     {
-        private readonly object _userLock = new object();
+        private readonly object _lock = new object();
         private readonly Dictionary<string, User> _users = new Dictionary<string, User>();
         private readonly List<ChatMessage> _chatMessages = new List<ChatMessage>();
         private readonly List<UserUpdate> _userUpdates = new List<UserUpdate>();
@@ -86,7 +86,7 @@ namespace Jvh.App.ChatServer
 
         public bool IsUserInChatRoom(string username)
         {
-            lock (_userLock)
+            lock (_lock)
                 return _users.ContainsKey(username);
         } 
 
@@ -95,27 +95,27 @@ namespace Jvh.App.ChatServer
         {
             get
             {
-                lock (_userLock) return _users.Keys.ToList();
+                lock (_lock) return _users.Keys.ToList();
             }
         }
 
         public void JoinChat(string username)
         {
-            lock (_userLock)
+            lock (_lock)
             {
                 if (_users.ContainsKey(username))
                 {
                     throw new Exception($"User already exists: {username}");
                 }
 
-                _users.Add(username, new User(username));
+                _users.Add(username, new User(username, _chatMessages.Count, _userUpdates.Count));
                 _userUpdates.Add(new UserUpdate() { User = username, UserUpdateType = UserUpdateType.Login });
             }
         }
 
         public void LeaveChat(string username)
         {
-            lock (_userLock)
+            lock (_lock)
             {
                 _users.Remove(username);
                 _userUpdates.Add(new UserUpdate() { User = username, UserUpdateType = UserUpdateType.Logout });
@@ -124,34 +124,38 @@ namespace Jvh.App.ChatServer
 
         public IEnumerable<ChatMessage> GetUnreadChatMessagesForUser(string username)
         {
-            lock (_userLock)
+            lock (_lock)
             {
                 if (_users[username].MessageIndex == _chatMessages.Count) return Enumerable.Empty<ChatMessage>();
 
                 var index = _users[username].MessageIndex;
                 _users[username].MessageIndex = _chatMessages.Count;
 
-                lock(_userLock)
+                lock(_lock)
                     return _chatMessages.Skip(index).ToList();
             }
         }
 
         public IEnumerable<UserUpdate> GetUnreadUserUpdatesForUser(string username)
         {
-            lock (_userLock)
+            lock (_lock)
             {
-                if (_users[username].MessageIndex == _userUpdates.Count) return Enumerable.Empty<UserUpdate>();
+                var user = _users[username];
+                var count = _userUpdates.Count;
+                var index = user.UserUpdateIndex;
 
-                var index = _users[username].UserUpdateIndex;
-                _users[username].UserUpdateIndex = _userUpdates.Count;
+                if (index >= count) return Enumerable.Empty<UserUpdate>();
 
-                return _userUpdates.Skip(index).ToList();
+                var userUpdates = _userUpdates.Skip(index).ToList();
+                _users[username].UserUpdateIndex = count;
+
+                return userUpdates;
             }
         }
 
         public void PublishChatMessage(ChatMessage message)
         {
-            lock (_userLock)
+            lock (_lock)
             {
                 _chatMessages.Add(message);
             }
@@ -171,6 +175,13 @@ namespace Jvh.App.ChatServer
             Username = username;
             MessageIndex = 0;
             UserUpdateIndex = 0;
+        }
+
+        public User(string username, int messageIndex, int userUpdateIndex)
+        {
+            Username = username;
+            MessageIndex = messageIndex;
+            UserUpdateIndex = userUpdateIndex;
         }
     }
 }

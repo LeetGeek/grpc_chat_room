@@ -48,9 +48,16 @@ namespace Jvh.App.ChatClient.View
 
         private void Button_Click_Login(object sender, RoutedEventArgs e)
         {
-            _client.Login(TextBoxUsername.Text);
             _messageSubscription = _client.ChatMessageObservable.ObserveOnDispatcher().Subscribe(OnNextChatMessage);
             _userUpdateSubscription = _client.UserUpdateObservable.ObserveOnDispatcher().Subscribe(OnNextUserUpdate);
+            _client.Login(TextBoxUsername.Text);
+        }
+
+        private void Button_Click_Logout(object sender, RoutedEventArgs e)
+        {
+            _client.Logoff();
+            _messageSubscription.Dispose();
+            _userUpdateSubscription.Dispose();
         }
 
         private void OnNextUserUpdate(UserUpdate userUpdate)
@@ -73,11 +80,6 @@ namespace Jvh.App.ChatClient.View
             TextBoxChatMain.ScrollToEnd();
         }
 
-        private void Button_Click_Logout(object sender, RoutedEventArgs e)
-        {
-            _messageSubscription.Dispose();
-            _userUpdateSubscription.Dispose();
-            _client.Logoff();
-        }
+        
     }
 }
