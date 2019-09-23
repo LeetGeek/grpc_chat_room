@@ -16,18 +16,19 @@ namespace Jvh.Service
         public override async Task<PingResponse> Ping(PingRequest request, ServerCallContext context)
         {
             await Task.Delay(1000);
+            
             return new PingResponse() {Timestamp = Timestamp.FromDateTime(DateTime.UtcNow)};
         }
 
-        public static Grpc.Core.Server LaunchService(string host, int port)
-        {
-            var server = new Server();
-            var serviceDef = TestService.BindService(new TestServiceImpl());
-            server.Services.Add(serviceDef);
-            server.Ports.Add(host, port, ServerCredentials.Insecure);
-            server.Start();
-            return server;
-        }
+        //public static Grpc.Core.Server LaunchService(string host, int port)
+        //{
+        //    var server = new Server();
+        //    var serviceDef = TestService.BindService(new TestServiceImpl());
+        //    server.Services.Add(serviceDef);
+        //    server.Ports.Add(host, port, ServerCredentials.Insecure);
+        //    server.Start();
+        //    return server;
+        //}
     }
 
     public class TestClient
