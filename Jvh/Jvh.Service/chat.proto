@@ -24,16 +24,6 @@ message UserInfo {
 	string Username = 1;
 }
 
-
-message ChatRegistrationRequest {
-	string Name = 1;
-}
-
-message ChatRegistration {
-	int32 Id = 1;
-	string Name = 2;
-}
-
 message ChatMessage {
 	google.protobuf.Timestamp Timestamp = 1;
 	string From = 2;
