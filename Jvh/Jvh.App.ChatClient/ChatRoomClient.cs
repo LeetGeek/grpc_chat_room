@@ -46,13 +46,12 @@ namespace Jvh.App.ChatClient
             _username = username;
             var userInfo = new UserInfo() { Username = _username };
 
-            Task.Run(() =>
+            Task.Run(async() =>
             {
-                //Thread.Sleep(1000);
                 using (var call = _client.ListenForMessageUpdates(userInfo))
                 {
                     var responseStream = call.ResponseStream;
-                    while (responseStream.MoveNext().Result)
+                    while (await responseStream.MoveNext())
                     {
                         var message = responseStream.Current;
                         _subjectChatMessage.OnNext(message);
@@ -60,20 +59,19 @@ namespace Jvh.App.ChatClient
                 }
             });
 
-            Task.Run(() =>
+            Task.Run(async() =>
             {
-                //Thread.Sleep(500);
                 using (var call = _client.ListenForUserUpdates(userInfo))
                 {
                     var responseStream = call.ResponseStream;
-                    while (responseStream.MoveNext().Result)
+                    while (await responseStream.MoveNext())
                     {
                         var userUpdate = responseStream.Current;
                         _subjectUserUpdate.OnNext(userUpdate);
                     }
                 }
             });
-
+            
         }
 
         public void Logoff()
