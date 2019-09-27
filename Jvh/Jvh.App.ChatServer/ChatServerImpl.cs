@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Dynamic;
 using System.Linq;
@@ -16,9 +17,30 @@ namespace Jvh.App.ChatServer
     {
         static ChatRoomManager _chatRoomManager = new ChatRoomManager();
 
+        private readonly object _lock = new object();
+        private List<MessageClient> _messageClients = new List<MessageClient>();
+
+        private ConcurrentQueue<ChatMessage> _messageQueue = new ConcurrentQueue<ChatMessage>();
+
+        class MessageClient
+        {
+
+            public string Username { get; set; }
+            public ServerCallContext context { get; set; }
+            public IServerStreamWriter<ChatMessage> responseStream { get; set; }
+
+            public MessageClient(string username, ServerCallContext context, IServerStreamWriter<ChatMessage> responseStream)
+            {
+                this.context = context;
+                this.responseStream = responseStream;
+                this.Username = username;
+            }
+        }
+
+
         public ChatServerImpl() : base()
         {
-            
+            BackgroundTask();
         }
 
         public override Task<ChatResponse> Login(UserInfo request, ServerCallContext context)
@@ -37,7 +59,8 @@ namespace Jvh.App.ChatServer
         {
             try
             {
-                _chatRoomManager.PublishChatMessage(request);
+                //_chatRoomManager.PublishChatMessage(request);
+                _messageQueue.Enqueue(request);
                 return Task.FromResult(new ChatResponse());
             }
             catch (RpcException rpcException)
@@ -55,16 +78,18 @@ namespace Jvh.App.ChatServer
 
         public override async Task ListenForMessageUpdates(UserInfo request, IServerStreamWriter<ChatMessage> responseStream, ServerCallContext context)
         {
-            while (!context.CancellationToken.IsCancellationRequested && _chatRoomManager.IsUserInChatRoom(request.Username))
-            {
-                var messages = _chatRoomManager.GetUnreadChatMessagesForUser(request.Username);
-                foreach (var chatMessage in messages)
-                {
-                    await responseStream.WriteAsync(chatMessage);
-                }
+            AddMessageClient(request.Username, responseStream, context);
 
-                await Task.Delay(50);
-            }
+            //while (!context.CancellationToken.IsCancellationRequested && _chatRoomManager.IsUserInChatRoom(request.Username))
+            //{
+            //    var messages = _chatRoomManager.GetUnreadChatMessagesForUser(request.Username);
+            //    foreach (var chatMessage in messages)
+            //    {
+            //        await responseStream.WriteAsync(chatMessage);
+            //    }
+
+            //    await Task.Delay(50);
+            //}
         }
 
         public override async Task ListenForUserUpdates(UserInfo request, IServerStreamWriter<UserUpdate> responseStream, ServerCallContext context)
@@ -92,6 +117,68 @@ namespace Jvh.App.ChatServer
                     Console.WriteLine($"Ping completed in {time.TotalMilliseconds/1000:F9} seconds");
 
                     Thread.Sleep(100);
+                }
+            });
+        }
+
+        private void AddMessageClient(string clientName, IServerStreamWriter<ChatMessage> responseStream, ServerCallContext context)
+        {
+            lock (_lock)
+            {
+                if (_messageClients.FirstOrDefault(o => o.Username == clientName) == null)
+                {
+                    var messageClient = new MessageClient(clientName, context, responseStream);
+                    _messageClients.Add(messageClient);
+                }
+            }
+        }
+        private void RemoveMessageClient(string clientName)
+        {
+            lock (_lock)
+            {
+                _messageClients.RemoveAll(o => o.Username == clientName);
+            }
+        }
+
+        private void RemoveMessageClient(MessageClient client)
+        {
+            lock (_lock)
+            {
+                _messageClients.Remove(client);
+            }
+        }
+
+        private void BackgroundTask()
+        {
+            Task.Run( async () =>
+            {
+                IEnumerable<MessageClient> list;
+
+                while (true)
+                {
+                    lock (_lock) list = _messageClients.ToList();
+
+                    if (_messageQueue.TryDequeue(out var message))
+                    {
+                        foreach (var messageClient in list)
+                        {
+                            try
+                            {
+                                if (messageClient.context.CancellationToken.IsCancellationRequested)
+                                {
+                                    RemoveMessageClient(messageClient);
+                                }
+                                await messageClient.responseStream.WriteAsync(message);
+                            }
+                            catch (RpcException rpce)
+                            {
+                                Console.WriteLine(rpce);
+                                RemoveMessageClient(messageClient);
+                            }
+                        }
+                    }
+
+                    await Task.Delay(5);
                 }
             });
         }
